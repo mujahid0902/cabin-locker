@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Cabin Locker</title>
+<meta name="description" content="Shared cash ledger for the cabin drawer. Denominations, bundles and a private Google Sheet.">
+<meta name="theme-color" content="#000000">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Locker">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>
+:root{color-scheme:light;--black:#000;--g900:#1A1A1A;--g800:#2E2E2E;--g500:#5C5C5C;--g300:#8A8A8A;--silver:#C0C0C0;--line:#E8E8E8;--soft:#F2F2F2;--canvas:#FAFAFA;--white:#fff;--orange:#FF6A00;--orange-h:#E85E00;--orange-p:#CC5300;--r:16px;--ease:cubic-bezier(.4,0,.2,1)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--canvas);color:var(--black);font:16px/1.45 'Hanken Grotesk',system-ui,sans-serif}
+body{padding-bottom:env(safe-area-inset-bottom)}
+h1,h2,h3,p{margin:0}
+.disp{font-family:'League Spartan',system-ui,sans-serif;text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+h1.disp{font-size:26px;line-height:1.05}h2.disp{font-size:15px;color:var(--g500);font-weight:600}
+.eyebrow{font-family:'League Spartan',sans-serif;text-transform:uppercase;letter-spacing:.12em;font-size:11px;font-weight:600;color:var(--g500)}
+.muted{color:var(--g500)}.small{font-size:14px}.tiny{font-size:12px}
+button,input,select{font:inherit;color:inherit}
+button{border:0;background:none;cursor:pointer;padding:0}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+a{color:var(--black)}a:hover{color:var(--orange-h)}
+i[data-lucide],svg.lucide{width:20px;height:20px;flex:none;display:inline-block;vertical-align:middle}
+.app{max-width:520px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;background:var(--canvas)}
+@media(min-width:720px){body{background:var(--soft)}.app{border-left:1px solid var(--line);border-right:1px solid var(--line)}}
+.top{display:flex;align-items:center;justify-content:space-between;padding:calc(14px + env(safe-area-inset-top)) 20px 12px;background:var(--canvas);position:sticky;top:0;z-index:2}
+.logo{font-family:'League Spartan',sans-serif;font-weight:700;font-size:20px;letter-spacing:.08em;display:flex;align-items:center;gap:10px}
+.logo i{width:22px;height:22px}
+.status{display:flex;align-items:center;gap:8px}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:var(--white);border:1px solid var(--line);font-size:12px;font-weight:600;color:var(--g500);white-space:nowrap}
+.pill i{width:14px;height:14px}.pill .dot{width:7px;height:7px;border-radius:50%;background:var(--silver)}.pill.live .dot{background:var(--orange)}
+.iconbtn{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--white);border:1px solid var(--line);color:var(--black);transition:background .15s var(--ease),transform .15s var(--ease)}
+.iconbtn:hover{background:var(--soft)}.iconbtn:active{transform:scale(.98)}
+main{flex:1;padding:8px 20px 110px;display:flex;flex-direction:column;gap:24px}
+.pagehead{display:flex;flex-direction:column;gap:6px}
+.tabs{position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:center;z-index:5;pointer-events:none}
+.tabs>div{pointer-events:auto;width:100%;max-width:520px;display:grid;grid-template-columns:repeat(4,1fr);background:rgba(255,255,255,.86);backdrop-filter:blur(20px) saturate(1.1);-webkit-backdrop-filter:blur(20px) saturate(1.1);border-top:1px solid var(--line);padding:8px 8px max(10px,env(safe-area-inset-bottom))}
+.tab{display:flex;flex-direction:column;align-items:center;gap:4px;min-height:52px;padding:6px 0;border-radius:12px;color:var(--g500);font-family:'League Spartan',sans-serif;text-transform:uppercase;letter-spacing:.08em;font-size:10px;font-weight:600;transition:color .15s var(--ease)}
+.tab i{width:22px;height:22px}.tab.active{color:var(--black)}.tab.active i{color:var(--orange)}
+.card{background:var(--white);border-radius:var(--r);box-shadow:0 1px 2px rgba(0,0,0,.04),0 4px 16px -8px rgba(0,0,0,.08)}
+.balance{background:var(--black);color:var(--white);border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:22px;box-shadow:0 24px 48px -24px rgba(0,0,0,.5)}
+.balance .eyebrow{color:var(--silver)}
+.balance .top-row{display:flex;justify-content:space-between;align-items:flex-start}
+.balance .eye{width:36px;height:36px;border-radius:50%;background:var(--g900);color:var(--white);display:grid;place-items:center}
+.money{font-family:'League Spartan',sans-serif;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.balance .money{font-size:48px;line-height:1}.balance .money .ru{font-size:28px;color:var(--silver);margin-right:4px;vertical-align:baseline}
+.balance .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;border-top:1px solid var(--g800);padding-top:16px}
+.balance .split .eyebrow{font-size:10px}.balance .split strong{display:block;margin-top:4px;font-size:18px;font-family:'League Spartan',sans-serif;font-weight:600}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:0 20px;border-radius:999px;font-weight:600;font-size:15px;background:var(--black);color:var(--white);transition:background .15s var(--ease),transform .15s var(--ease);border:1px solid var(--black)}
+.btn:hover{background:var(--g900)}.btn:active{transform:scale(.98)}
+.btn.primary{background:var(--orange);border-color:var(--orange);color:var(--white)}.btn.primary:hover{background:var(--orange-h);border-color:var(--orange-h)}.btn.primary:active{background:var(--orange-p)}
+.btn.ghost{background:var(--white);color:var(--black);border:1px solid var(--black)}.btn.ghost:hover{background:var(--soft)}
+.btn.full{width:100%}
+.textbtn{display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:14px;color:var(--black);min-height:32px}
+.textbtn i{width:16px;height:16px}.textbtn:hover{color:var(--orange-h)}
+.sectionhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
+.notes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.notes.all{grid-template-columns:repeat(2,minmax(0,1fr))}
+.note{padding:14px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.note .den{font-family:'League Spartan',sans-serif;font-weight:600;font-size:20px}
+.note .counts{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.note .counts strong{display:block;font-family:'League Spartan',sans-serif;font-size:18px;font-weight:600}
+.note .counts span{font-size:11px;color:var(--g500)}
+.note .sub{border-top:1px solid var(--line);padding-top:8px;font-size:12px;color:var(--g500);display:flex;justify-content:space-between;gap:4px;flex-wrap:wrap}.note .sub b{color:var(--black)}
+.list{padding:4px 16px}
+.tx{display:flex;gap:12px;align-items:center;padding:14px 0;border-bottom:1px solid var(--line);width:100%;text-align:left}
+.tx:last-child{border-bottom:0}
+.txicon{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--black);color:var(--white)}
+.txicon.out{background:var(--white);color:var(--black);border:1px solid var(--black)}.txicon.opening{background:var(--soft);color:var(--black)}
+.txbody{flex:1;min-width:0}.txtitle{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.txmeta{font-size:12px;color:var(--g500);margin-top:2px}
+.txamt{text-align:right;font-family:'League Spartan',sans-serif;font-weight:600;font-size:16px;white-space:nowrap}.txamt small{display:block;font-family:'Hanken Grotesk',sans-serif;font-weight:400;font-size:11px;color:var(--g500);margin-top:2px}
+.empty{padding:32px 16px;text-align:center;color:var(--g500);display:flex;flex-direction:column;gap:10px;align-items:center}
+.helper{font-size:13px;color:var(--g500);line-height:1.5}
+.banner{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:12px;background:var(--white);border:1px solid var(--line);font-size:13px}
+.banner.warn{border-color:var(--orange);}
+.banner i{width:18px;height:18px;flex:none}
+.error{padding:12px 14px;border-radius:12px;background:var(--black);color:var(--white);font-size:13px}
+.field{width:100%;min-height:50px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:var(--white);font-size:16px}
+.field:focus{outline:none;border-color:var(--black);box-shadow:0 0 0 2px var(--orange)}
+select.field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:40px}
+label.lbl,.lbl{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
+.group{display:flex;flex-direction:column;gap:14px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}.row:last-child{border-bottom:0}
+.row p{font-size:13px;color:var(--g500);margin-top:2px}
+.section-card{padding:18px 16px}.section-card h2{margin-bottom:6px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--white);font-size:14px;font-weight:600;min-height:38px;transition:all .15s var(--ease)}
+.chip.on{background:var(--black);color:var(--white);border-color:var(--black)}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.toolbar .field{flex:1;min-width:160px}
+dialog{border:0;padding:0;background:var(--white);color:var(--black);width:100%;max-width:520px;max-height:92dvh;border-radius:20px 20px 0 0;margin:auto 0 0;box-shadow:0 -20px 60px -20px rgba(0,0,0,.35)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+@media(min-width:720px){dialog{margin:auto;border-radius:20px;max-height:88vh}}
+.mhead{display:flex;justify-content:space-between;align-items:center;padding:18px 20px 8px;position:sticky;top:0;background:var(--white);z-index:1}
+.mbody{padding:8px 20px 24px;display:flex;flex-direction:column;gap:18px}
+.dens{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.den-btn{padding:12px 6px;border-radius:12px;border:1px solid var(--line);background:var(--white);display:flex;flex-direction:column;align-items:center;gap:2px;min-height:60px;transition:all .15s var(--ease)}
+.den-btn b{font-family:'League Spartan',sans-serif;font-size:18px;font-weight:600}.den-btn small{font-size:11px;color:var(--g500)}
+.den-btn.on{background:var(--black);color:var(--white);border-color:var(--black)}.den-btn.on small{color:var(--silver)}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--soft);border-radius:12px;padding:4px;gap:4px}
+.seg button{min-height:42px;border-radius:9px;font-weight:600;font-size:14px;color:var(--g500)}.seg button.on{background:var(--white);color:var(--black);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.stepper{display:grid;grid-template-columns:52px 1fr 52px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--white)}
+.stepper button{min-height:52px;font-size:22px;background:var(--soft)}
+.stepper input{border:0;text-align:center;font-size:22px;font-family:'League Spartan',sans-serif;font-weight:600;min-width:0}
+.stepper input:focus{outline:none}
+.preview{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--soft);border-radius:12px;font-size:14px}.preview strong{font-family:'League Spartan',sans-serif;font-size:18px}
+.cart{display:flex;flex-direction:column;gap:6px}
+.cartrow{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;font-size:14px}.cartrow span{flex:1}.cartrow b{font-family:'League Spartan',sans-serif}
+.cartrow button{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:var(--g500)}.cartrow button i{width:16px;height:16px}
+.summary{border-top:1px solid var(--line);padding-top:14px;display:flex;flex-direction:column;gap:8px}
+.summary div{display:flex;justify-content:space-between}.summary b{font-family:'League Spartan',sans-serif;font-size:18px}
+.notice{padding:12px 14px;border-radius:12px;border:1px solid var(--orange);font-size:13px;display:flex;gap:10px;align-items:flex-start}.notice i{color:var(--orange);width:18px;height:18px;flex:none;margin-top:1px}
+.auth{max-width:440px;margin:0 auto;min-height:100dvh;padding:calc(48px + env(safe-area-inset-top)) 24px 48px;display:flex;flex-direction:column;gap:28px}
+.auth .logo{font-size:24px}
+.who{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.who button{padding:16px 12px;border-radius:14px;border:1px solid var(--line);background:var(--white);text-align:left;display:flex;flex-direction:column;gap:8px}
+.who button.on{border-color:var(--black);background:var(--black);color:var(--white)}
+.who .av{width:36px;height:36px;border-radius:50%;background:var(--soft);color:var(--black);display:grid;place-items:center;font-family:'League Spartan',sans-serif;font-weight:700;font-size:14px}
+.who button.on .av{background:var(--orange);color:var(--white)}
+.who b{font-weight:600}
+.loading{min-height:100dvh;display:grid;place-items:center;color:var(--g500)}
+#toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--black);color:var(--white);padding:12px 18px;border-radius:999px;font-size:14px;font-weight:500;z-index:20;max-width:90vw;text-align:center;transition:opacity .24s var(--ease),transform .24s var(--ease)}
+#toast.hidden{opacity:0;transform:translate(-50%,8px);pointer-events:none}
+.hidden{display:none!important}
+#install{position:fixed;left:16px;right:16px;bottom:calc(88px + env(safe-area-inset-bottom));margin:0 auto;max-width:488px;background:var(--black);color:var(--white);border-radius:16px;padding:16px;display:flex;gap:14px;align-items:center;z-index:15;box-shadow:0 24px 48px -16px rgba(0,0,0,.5);animation:rise .42s var(--ease)}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+#install img{width:48px;height:48px;border-radius:12px;flex:none}
+#install .t{flex:1;min-width:0}#install b{display:block;font-family:'League Spartan',sans-serif;text-transform:uppercase;letter-spacing:.06em;font-size:13px}#install p{font-size:13px;color:var(--silver);margin-top:2px}
+#install .btn{min-height:40px;padding:0 16px;font-size:14px}
+#install .x{color:var(--silver);width:32px;height:32px;display:grid;place-items:center}
+.pos{color:var(--black)}.neg{color:var(--g800)}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div id="app"><div class="loading">Opening your locker…</div></div>
+<dialog id="modal" aria-labelledby="mtitle"></dialog>
+<div id="toast" class="hidden" role="status" aria-live="polite"></div>
+<div id="install" class="hidden" role="dialog" aria-label="Install Cabin Locker"></div>
+
+<script>
+/* ── CONFIG: paste your Apps Script web app URL (ends in /exec) between the quotes. ── */
+const CONFIG = { endpoint: "https://script.google.com/macros/s/AKfycbydQ5CvsVbzGf66GIYkXTK6YZfIkg4yFOa7i3QGST7E-4CiJybH-uVn8xjedXjIC8DpYQ/exec", appName: "Cabin Locker" };
+</script>
+
+<script>
+/* Shared, deterministic cash arithmetic — identical copy lives in Code.gs. */
+(function(root){
+ const denominations=[500,200,100,50,20,10,5,2,1];
+ function empty(){return Object.fromEntries(denominations.map(d=>[d,{bundles:0,loose:0}]))}
+ function total(inv,size){return denominations.reduce((s,d)=>s+d*(inv[d].bundles*size+inv[d].loose),0)}
+ function validate(lines,size){
+  if(!Number.isSafeInteger(size)||size<1||size>1000)throw Error('Bundle size must be 1–1,000 notes.');
+  if(!Array.isArray(lines)||!lines.length||lines.length>18)throw Error('Select at least one denomination.');
+  const seen=new Set();
+  lines.forEach(l=>{if(!denominations.includes(l.d)||!['loose','bundles'].includes(l.unit)||!Number.isSafeInteger(l.qty)||l.qty<1||l.qty>100000)throw Error('Enter a valid whole-number quantity.');const k=l.d+':'+l.unit;if(seen.has(k))throw Error('Duplicate denomination and unit.');seen.add(k)});
+ }
+ function apply(inv,lines,type,size){
+  validate(lines,size);if(!['in','out','opening'].includes(type))throw Error('Invalid transaction type.');
+  const next=JSON.parse(JSON.stringify(inv)),opened=[];
+  [...lines].sort((a,b)=>(a.unit==='bundles'?-1:1)-(b.unit==='bundles'?-1:1)).forEach(l=>{
+   const slot=next[l.d];
+   if(type!=='out'){slot[l.unit]+=l.qty;return}
+   if(l.unit==='bundles'){if(slot.bundles<l.qty)throw Error('Not enough ₹'+l.d+' bundles.');slot.bundles-=l.qty;return}
+   if(slot.loose<l.qty){const n=Math.ceil((l.qty-slot.loose)/size);if(slot.bundles<n)throw Error('Not enough ₹'+l.d+' notes.');slot.bundles-=n;slot.loose+=n*size;opened.push({d:l.d,qty:n})}
+   slot.loose-=l.qty;
+  });
+  const amount=lines.reduce((s,l)=>s+l.d*l.qty*(l.unit==='bundles'?size:1),0);
+  if(!Number.isSafeInteger(amount)||!Number.isSafeInteger(total(next,size)))throw Error('Amount is too large.');
+  return {inventory:next,amount,opened};
+ }
+ root.Ledger={denominations,empty,total,validate,apply};
+})(globalThis);
+</script>
+
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const I=(n,s=20)=>`<i data-lucide="${n}" style="width:${s}px;height:${s}px"></i>`;
+const icons=()=>{try{window.lucide&&lucide.createIcons()}catch{}};
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=n=>'₹'+Number(n).toLocaleString('en-IN');
+const dt=t=>new Date(t).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit',timeZone:'Asia/Kolkata'});
+const native=typeof google!=='undefined'&&google.script&&google.script.run;
+const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent)&&!window.MSStream;
+let endpoint=native?'embedded':(CONFIG.endpoint||localStorage.getItem('lockerEndpoint')||'');
+let token=localStorage.getItem('lockerSession')||'',user=null,meta=null,view='overview',state=null,syncing=false,lastSync=null,syncError='',filter='all',search='';
+let hideBalance=localStorage.getItem('lockerHide')==='1';
+let pending=JSON.parse(localStorage.getItem('lockerPending')||'null');
+let entry=null,saving=false,authWho='owner';
+const demo=()=>!endpoint;
+const TYPE_LABEL={in:'Cash added',out:'Cash taken out',opening:'Opening cash count'};
+
+function sample(){let inv=Ledger.empty();const tx=[];const add=(type,lines,note,actor,h)=>{const before=Ledger.total(inv,100),r=Ledger.apply(inv,lines,type,100);inv=r.inventory;tx.push({id:crypto.randomUUID(),type,lines,note,actor,amount:r.amount,before,after:Ledger.total(inv,100),opened:r.opened,time:new Date(Date.now()-h*3600000).toISOString()})};
+ add('opening',[{d:500,unit:'bundles',qty:1},{d:500,unit:'loose',qty:20},{d:200,unit:'loose',qty:25},{d:100,unit:'bundles',qty:1},{d:100,unit:'loose',qty:20},{d:50,unit:'loose',qty:15}],'Opening cash count','Mujahid',50);
+ add('in',[{d:500,unit:'loose',qty:20}],'Cash added','Father',20);add('out',[{d:500,unit:'loose',qty:4}],'Office expenses','Mujahid',4);add('out',[{d:500,unit:'loose',qty:1}],'Courier payment','Father',1);
+ return {inventory:inv,transactions:tx,bundleSize:100,version:tx.length,sheetUrl:null}}
+
+function toast(t){const el=$('#toast');el.textContent=t;el.classList.remove('hidden');clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.add('hidden'),4200)}
+
+async function api(action,data={}){
+ if(native)return new Promise((res,rej)=>{const timer=setTimeout(()=>rej(Error('No confirmation received. Check the connection and retry the same entry.')),40000);google.script.run.withSuccessHandler(r=>{clearTimeout(timer);r.ok?res(r.data):rej(Error(r.error))}).withFailureHandler(e=>{clearTimeout(timer);rej(Error(e.message||'Connection failed.'))}).api({action,token,...data})});
+ const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),40000);
+ try{const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,token,...data}),redirect:'follow',signal:ctl.signal,credentials:'omit'});
+  if(!r.ok)throw Error('Google connection failed. Please try again.');let j;try{j=await r.json()}catch{throw Error('Check the web app URL and that access is set to Anyone.')}
+  if(!j.ok)throw Error(j.error);return j.data}
+ catch(e){if(e.name==='AbortError')throw Error('No confirmation received. Check the connection and retry the same entry.');if(e instanceof TypeError)throw Error('You appear to be offline. Balance shown may be out of date.');throw e}
+ finally{clearTimeout(timer)}}
+
+async function derive(password,username){const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:new TextEncoder().encode(meta.salt+':'+username),iterations:600000,hash:'SHA-256'},key,256);return [...new Uint8Array(bits)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+
+const logo=()=>`<div class="logo">${I('lock',22)}<span>Locker</span></div>`;
+function statusPill(){if(demo())return `<span class="pill"><span class="dot"></span>Sample data</span>`;const t=syncError?'Sync paused':syncing?'Syncing…':'Google Sheets';return `<span class="pill ${syncError?'':'live'}"><span class="dot"></span>${t}</span>`}
+
+function render(){
+ if(!state)return;
+ const name=user?.name||'Mujahid';
+ const titles={overview:['Your locker','Every note accounted for.'],activity:['Activity','Every deposit and withdrawal.'],cash:['Cash count','Bundles and loose notes, separately.'],settings:['Settings','Connection, access and install.']};
+ $('#app').innerHTML=`<div class="app"><header class="top">${logo()}<div class="status">${statusPill()}<button class="iconbtn" data-action="refresh" aria-label="Refresh">${I('refresh-cw',18)}</button></div></header>
+ <main><div class="pagehead"><h1 class="disp">${titles[view][0]}</h1><p class="muted small">${titles[view][1]}</p></div>
+ ${demo()?`<div class="banner warn">${I('info')}<span style="flex:1"><b>Sample data.</b> Connect your Google Sheet to go live.</span><button class="textbtn" data-action="connect">Connect</button></div>`:''}
+ ${syncError?`<div class="error">${esc(syncError)}</div>`:''}
+ ${pending?`<div class="banner warn">${I('clock')}<span style="flex:1">An entry of <b>${money(pendingAmount())}</b> awaits confirmation.</span><button class="textbtn" data-action="retry">Check &amp; retry</button></div>`:''}
+ ${({overview,activity,cash,settings})[view]()}</main>
+ <nav class="tabs" aria-label="Main"><div>${[['overview','layout-grid','Home'],['activity','history','Activity'],['cash','banknote','Cash'],['settings','settings','Settings']].map(([id,ic,l])=>`<button class="tab ${view===id?'active':''}" data-view="${id}" ${view===id?'aria-current="page"':''}>${I(ic,22)}<span>${l}</span></button>`).join('')}</div></nav></div>`;
+ bind();icons();
+}
+function pendingAmount(){try{return Ledger.apply(state.inventory,pending.lines,pending.type,state.bundleSize).amount}catch{return pending.lines.reduce((s,l)=>s+l.d*l.qty*(l.unit==='bundles'?state.bundleSize:1),0)}}
+
+function overview(){
+ const bal=Ledger.total(state.inventory,state.bundleSize),today=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
+ const tx=state.transactions.filter(t=>new Date(t.time).toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'})===today);
+ const inT=tx.filter(t=>t.type==='in').reduce((s,t)=>s+t.amount,0),outT=tx.filter(t=>t.type==='out').reduce((s,t)=>s+t.amount,0);
+ const hb=v=>hideBalance?'••••':v;
+ return `<section class="balance"><div class="top-row"><span class="eyebrow">Available cash</span><button class="eye" data-action="hide" aria-label="${hideBalance?'Show':'Hide'} balance">${I(hideBalance?'eye-off':'eye',16)}</button></div>
+ <div class="money">${hideBalance?'••••••':`<span class="ru">₹</span>${bal.toLocaleString('en-IN')}`}</div>
+ <div class="split"><div><span class="eyebrow">Added today</span><strong>${hb('+ '+money(inT))}</strong></div><div><span class="eyebrow">Taken out today</span><strong>${hb('− '+money(outT))}</strong></div></div></section>
+ <div class="actions"><button class="btn primary" data-entry="in">${I('plus',18)} Add cash</button><button class="btn ghost" data-entry="out">${I('minus',18)} Take out</button></div>
+ <section><div class="sectionhead"><h2 class="disp">Cash breakdown</h2><button class="textbtn" data-view="cash">All ${I('arrow-right')}</button></div><div class="notes">${[500,200,100].map(noteCard).join('')}</div><p class="helper" style="margin-top:10px">1 bundle = ${state.bundleSize} notes, counted separately from loose notes.</p></section>
+ <section><div class="sectionhead"><h2 class="disp">Recent activity</h2><button class="textbtn" data-view="activity">All ${I('arrow-right')}</button></div><div class="card list">${rows(state.transactions.slice(-4).reverse())}</div></section>`}
+
+function noteCard(d){const n=state.inventory[d];return `<div class="card note"><span class="den">₹${d}</span><div class="counts"><div><strong>${n.bundles}</strong><span>Bundles</span></div><div><strong>${n.loose}</strong><span>${d<10?'Coins':'Loose'}</span></div></div><div class="sub"><span>Total</span><b>${money(d*(n.bundles*state.bundleSize+n.loose))}</b></div></div>`}
+
+function rows(list){
+ if(!list.length)return `<div class="empty">${I('banknote',28)}<p>No entries yet.</p><p class="small">Count the cash in the drawer and record it as the opening count.</p><button class="btn" data-entry="opening">Add opening cash</button></div>`;
+ return list.map(t=>`<button class="tx" data-detail="${esc(t.id)}"><div class="txicon ${t.type}">${I(t.type==='in'?'arrow-down-left':t.type==='out'?'arrow-up-right':'lock',18)}</div><div class="txbody"><div class="txtitle">${esc(t.note||TYPE_LABEL[t.type])}</div><div class="txmeta">${esc(t.actor)} · ${dt(t.time)}</div></div><div class="txamt ${t.type==='out'?'neg':'pos'}">${t.type==='out'?'−':'+'}${money(t.amount)}<small>Balance ${money(t.after)}</small></div></button>`).join('')}
+
+function activity(){return `<div class="toolbar"><input class="field" id="search" placeholder="Search note or person" value="${esc(search)}" aria-label="Search"><button class="iconbtn" data-action="export" aria-label="Export CSV">${I('download',18)}</button></div>
+ <div class="chips">${[['all','All'],['in','Added'],['out','Taken out'],['opening','Opening']].map(([v,l])=>`<button class="chip ${filter===v?'on':''}" data-filter="${v}">${l}</button>`).join('')}</div>
+ <div class="card list" id="rows">${filteredRows()}</div>`}
+function filteredRows(){const list=state.transactions.slice().reverse().filter(t=>(filter==='all'||t.type===filter)&&[t.note,t.actor,t.amount].join(' ').toLowerCase().includes(search.toLowerCase()));return list.length?rows(list):'<div class="empty"><p>No matching entries.</p></div>'}
+
+function cash(){return `<section class="card section-card"><span class="eyebrow">Total in drawer</span><div class="money" style="font-size:36px;margin:6px 0 16px">${money(Ledger.total(state.inventory,state.bundleSize))}</div><div class="actions"><button class="btn primary" data-entry="in">${I('plus',18)} Add</button><button class="btn ghost" data-entry="out">${I('minus',18)} Take out</button></div></section>
+ <div class="notes all">${Ledger.denominations.map(noteCard).join('')}</div>
+ <p class="helper">1 bundle = ${state.bundleSize} notes. Taking out more loose notes than available opens a bundle — the app tells you which one before you confirm. Remaining notes become loose.</p>`}
+
+function settings(){
+ const canInstall=!standalone()&&!native&&(deferredPrompt||isIOS);
+ return `<section class="card section-card"><h2 class="disp">Connection</h2>
+ <div class="row"><div><b>Google Sheets</b><p>${demo()?'Not connected — showing sample data':syncError?'Needs attention':'Connected · checks every 20 seconds while open'}</p></div><span class="pill ${demo()?'':'live'}"><span class="dot"></span>${demo()?'Demo':'Live'}</span></div>
+ ${state.sheetUrl?`<div class="row"><div><b>Open Google Sheet</b><p>Export to Excel: File → Download → .xlsx</p></div><a class="iconbtn" href="${esc(state.sheetUrl)}" target="_blank" rel="noopener" aria-label="Open sheet">${I('external-link',18)}</a></div>`:''}
+ ${native?'':`<div class="row"><div><b>Web app URL</b><p>${endpoint?esc(endpoint.replace(/^https:\/\/script\.google\.com\/macros\/s\/(.{6}).+\/exec$/,'script.google.com/…$1…/exec')):'Paste your Apps Script /exec address'}</p></div><button class="textbtn" data-action="connect">${endpoint?'Change':'Connect'}</button></div>`}</section>
+ <section class="card section-card"><h2 class="disp">Account</h2>
+ <div class="row"><div><b>${esc(user?.name||'Mujahid')}</b><p>${demo()?'Demo — no password needed':'Signed in on this device'}</p></div><span class="who" style="display:block"><span class="av" style="display:grid">${esc((user?.name||'M').slice(0,2).toUpperCase())}</span></span></div>
+ ${demo()?`<div class="row"><div><b>Try entries as</b></div><select class="field" id="demoUser" style="width:auto"><option>Mujahid</option><option>Father</option></select></div>`:`<div class="row"><div><b>Change my password</b><p>Signs out your other sessions</p></div><button class="textbtn" data-action="password">Change</button></div><div class="row"><div><b>Sign out</b></div><button class="textbtn" data-action="logout">Sign out</button></div>`}</section>
+ <section class="card section-card"><h2 class="disp">Counting</h2>
+ <div class="row"><div><b>Notes in one bundle</b><p>Fixed when the locker was created</p></div><b class="money" style="font-size:22px">${state.bundleSize}</b></div>
+ <div class="row"><div><b>Denominations</b><p>₹500 · ₹200 · ₹100 · ₹50 · ₹20 · ₹10 · ₹5 · ₹2 · ₹1</p></div></div>
+ <div class="row"><div><b>Corrections</b><p>Open any entry and tap “Record reversal”. Old entries are never edited or deleted.</p></div></div></section>
+ <section class="card section-card"><h2 class="disp">Install as app</h2>
+ ${standalone()?`<div class="row"><div><b>Installed</b><p>You are using the installed app.</p></div>${I('check',20)}</div>`:native?`<div class="row"><div><b>Not available here</b><p>Install works from the hosted app address, not the script.google.com page.</p></div></div>`:canInstall?`<div class="row"><div><b>Add to your phone</b><p>Opens full-screen like a normal app.</p></div><button class="btn" style="min-height:40px" data-action="install">Install</button></div>`:`<div class="row"><div><b>Add to your phone</b><p>In Chrome: menu ⋮ → “Install app” or “Add to Home screen”.</p></div></div>`}</section>`}
+
+function bind(){
+ $$('[data-view]').forEach(b=>b.onclick=()=>{view=b.dataset.view;render();scrollTo(0,0)});
+ $$('[data-entry]').forEach(b=>b.onclick=()=>openEntry(b.dataset.entry));
+ $$('[data-action]').forEach(b=>b.onclick=()=>({refresh,hide:()=>{hideBalance=!hideBalance;localStorage.setItem('lockerHide',hideBalance?'1':'0');render()},connect:connectModal,export:exportCSV,password:passwordModal,logout,retry:retryPending,install:doInstall})[b.dataset.action]?.());
+ $$('[data-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.filter;$$('[data-filter]').forEach(x=>x.classList.toggle('on',x===b));$('#rows').innerHTML=filteredRows();bindDetails();icons()});
+ bindDetails();
+ if($('#search'))$('#search').oninput=e=>{search=e.target.value;$('#rows').innerHTML=filteredRows();bindDetails();icons()};
+ if($('#demoUser')){$('#demoUser').value=user?.name||'Mujahid';$('#demoUser').onchange=e=>{user={id:e.target.value==='Father'?'father':'owner',name:e.target.value};render()}}
+}
+function bindDetails(){$$('[data-detail]').forEach(b=>b.onclick=()=>detail(b.dataset.detail))}
+
+function modal(title,html){const m=$('#modal');m.innerHTML=`<div class="mhead"><h2 class="disp" id="mtitle" style="color:var(--black);font-size:18px">${title}</h2><button class="iconbtn" id="closeModal" aria-label="Close">${I('x',18)}</button></div><div class="mbody">${html}</div>`;$('#closeModal').onclick=()=>{if(!saving)m.close()};if(!m.open)m.showModal();icons()}
+
+/* ── Entry flow ── */
+function currentLines(){const map=new Map();[...(entry.cart||[]),...(entry.qty>0?[{d:entry.d,unit:entry.unit,qty:entry.qty}]:[])].forEach(l=>{const k=l.d+':'+l.unit;map.set(k,{...l,qty:(map.get(k)?.qty||0)+l.qty})});return [...map.values()]}
+function openEntry(type,preset){
+ if(pending){toast('Confirm the pending entry first.');return}
+ if(type==='opening'&&state.transactions.length)type='in';
+ if(type==='in'&&!state.transactions.length)type='opening';
+ entry={type,d:500,unit:'loose',qty:1,cart:[],note:'',version:state.version,id:crypto.randomUUID(),...(preset||{})};
+ drawEntry();
+}
+function drawEntry(){
+ const t=entry.type,avail=d=>state.inventory[d].bundles*state.bundleSize+state.inventory[d].loose;
+ modal(t==='out'?'Take out cash':t==='opening'?'Opening cash count':'Add cash',`
+ <div><span class="lbl">Denomination</span><div class="dens">${Ledger.denominations.map(d=>`<button class="den-btn ${entry.d===d?'on':''}" data-den="${d}"><b>₹${d}</b><small>${avail(d)} in drawer</small></button>`).join('')}</div></div>
+ <div><span class="lbl">Count as</span><div class="seg"><button data-unit="loose" class="${entry.unit==='loose'?'on':''}">${entry.d<10?'Loose coins':'Loose notes'}</button><button data-unit="bundles" class="${entry.unit==='bundles'?'on':''}">Bundles × ${state.bundleSize}</button></div></div>
+ <div><label class="lbl" for="qty">Quantity</label><div class="stepper"><button id="less" aria-label="Decrease">−</button><input id="qty" type="number" inputmode="numeric" min="0" max="100000" step="1" value="${entry.qty}"><button id="more" aria-label="Increase">+</button></div>
+ <div class="chips" style="margin-top:10px">${[1,5,10,20,50,100].map(n=>`<button class="chip" data-qty="${n}">${n}</button>`).join('')}</div></div>
+ <div class="preview"><span id="formula"></span><strong id="lineAmt"></strong></div>
+ <button class="textbtn" id="addLine">${I('plus')} Add another denomination</button>
+ ${entry.cart.length?`<div class="cart">${entry.cart.map((l,i)=>`<div class="cartrow"><span>₹${l.d} × ${l.qty} ${l.unit==='bundles'?'bundles':(l.d<10?'coins':'notes')}</span><b>${money(l.d*l.qty*(l.unit==='bundles'?state.bundleSize:1))}</b><button data-remove="${i}" aria-label="Remove">${I('x')}</button></div>`).join('')}</div>`:''}
+ <div><label class="lbl" for="note">Note <span class="muted" style="font-weight:400">(optional)</span></label><input class="field" id="note" maxlength="160" placeholder="e.g. Office expenses" value="${esc(entry.note)}"></div>
+ <div class="notice hidden" id="bundleNotice">${I('alert-circle')}<span id="bundleText"></span></div>
+ <div class="error hidden" id="entryError"></div>
+ <div class="summary"><div><span class="muted">Entry total</span><b id="entryTotal">—</b></div><div><span class="muted">Balance after</span><b id="afterTotal">—</b></div></div>
+ <button class="btn ${t==='out'?'':'primary'} full" id="save">${t==='out'?'Confirm take out':t==='opening'?'Save opening count':'Confirm add cash'}</button>`);
+ $$('[data-den]').forEach(b=>b.onclick=()=>{entry.d=+b.dataset.den;drawEntry()});
+ $$('[data-unit]').forEach(b=>b.onclick=()=>{entry.unit=b.dataset.unit;$$('[data-unit]').forEach(x=>x.classList.toggle('on',x===b));updateEntry()});
+ $('#qty').oninput=e=>{entry.qty=e.target.value===''?0:parseInt(e.target.value,10);updateEntry()};
+ $('#less').onclick=()=>{entry.qty=Math.max(0,(entry.qty||0)-1);$('#qty').value=entry.qty;updateEntry()};
+ $('#more').onclick=()=>{entry.qty=(entry.qty||0)+1;$('#qty').value=entry.qty;updateEntry()};
+ $$('[data-qty]').forEach(b=>b.onclick=()=>{entry.qty=+b.dataset.qty;$('#qty').value=entry.qty;updateEntry()});
+ $('#addLine').onclick=()=>{if(!(entry.qty>0)){toast('Enter a quantity first.');return}const k=entry.d+':'+entry.unit,ex=entry.cart.find(l=>l.d+':'+l.unit===k);if(ex)ex.qty+=entry.qty;else entry.cart.push({d:entry.d,unit:entry.unit,qty:entry.qty});entry.qty=0;drawEntry()};
+ $$('[data-remove]').forEach(b=>b.onclick=()=>{entry.cart.splice(+b.dataset.remove,1);drawEntry()});
+ $('#note').oninput=e=>entry.note=e.target.value;
+ $('#save').onclick=saveEntry;
+ updateEntry();
+}
+function updateEntry(){
+ const q=entry.qty||0,amt=entry.d*q*(entry.unit==='bundles'?state.bundleSize:1);
+ $('#formula').textContent=`₹${entry.d} × ${q} ${entry.unit==='bundles'?'bundles × '+state.bundleSize:entry.d<10?'coins':'notes'}`;$('#lineAmt').textContent=money(amt);
+ const lines=currentLines();$('#entryError').classList.add('hidden');$('#bundleNotice').classList.add('hidden');
+ try{if(!Number.isSafeInteger(q)||q<0)throw Error('Enter a whole-number quantity.');const r=Ledger.apply(state.inventory,lines,entry.type,state.bundleSize);
+  $('#entryTotal').textContent=money(r.amount);$('#afterTotal').textContent=money(Ledger.total(r.inventory,state.bundleSize));$('#save').disabled=false;
+  if(r.opened.length){$('#bundleText').textContent='Open '+r.opened.map(x=>`${x.qty} bundle${x.qty>1?'s':''} of ₹${x.d}`).join(', ')+'. Remaining notes will be counted as loose.';$('#bundleNotice').classList.remove('hidden')}}
+ catch(e){$('#entryTotal').textContent=money(lines.reduce((s,l)=>s+l.d*l.qty*(l.unit==='bundles'?state.bundleSize:1),0));$('#afterTotal').textContent='—';$('#save').disabled=true;$('#entryError').textContent=e.message;$('#entryError').classList.remove('hidden')}
+}
+async function saveEntry(){
+ if(saving)return;const data={id:entry.id,type:entry.type,lines:currentLines(),note:entry.note.trim(),version:entry.version,who:user?.id};
+ saving=true;const b=$('#save');b.disabled=true;b.textContent='Saving…';
+ try{
+  if(demo()){const before=Ledger.total(state.inventory,state.bundleSize),r=Ledger.apply(state.inventory,data.lines,data.type,state.bundleSize);state.inventory=r.inventory;state.transactions.push({...data,actor:user?.name||'Mujahid',time:new Date().toISOString(),amount:r.amount,before,after:Ledger.total(r.inventory,state.bundleSize),opened:r.opened});state.version++}
+  else{pending=data;localStorage.setItem('lockerPending',JSON.stringify(pending));await sendPending()}
+  $('#modal').close();render();toast(demo()?'Sample entry recorded':'Saved to Google Sheets')
+ }catch(e){$('#modal').close();syncError=e.message;render();toast(e.message)}finally{saving=false}
+}
+async function sendPending(){
+ if(pending.who&&pending.who!==user?.id)throw Error('Sign in with the account that created this pending entry.');
+ try{state=await api('transact',pending);pending=null;localStorage.removeItem('lockerPending');lastSync=new Date();syncError=''}
+ catch(e){if(e.message.startsWith('REJECTED:')){pending=null;localStorage.removeItem('lockerPending');try{state=await api('state')}catch{}throw Error(e.message.replace('REJECTED: ',''))}throw e}
+}
+async function retryPending(){if(!pending||saving)return;saving=true;try{await sendPending();render();toast('Entry confirmed.')}catch(e){syncError=e.message;render();toast(e.message)}finally{saving=false}}
+async function refresh(){
+ if(demo()){toast('Sample balance is up to date.');return}
+ if(syncing||!token||$('#modal').open)return;syncing=true;
+ try{state=await api('state');lastSync=new Date();syncError='';if(pending&&state.transactions.some(t=>t.id===pending.id)){pending=null;localStorage.removeItem('lockerPending')}if(!$('#modal').open)render()}
+ catch(e){syncError=e.message;if(e.message==='Please sign in again.'){token='';localStorage.removeItem('lockerSession');state=null;auth()}else if(!$('#modal').open)render()}
+ finally{syncing=false}
+}
+function detail(id){
+ const t=state.transactions.find(t=>t.id===id);if(!t)return;
+ modal('Entry details',`<p class="muted small">${dt(t.time)} · ${esc(t.actor)}</p>
+ <div class="money ${t.type==='out'?'neg':'pos'}" style="font-size:36px">${t.type==='out'?'−':'+'}${money(t.amount)}</div>
+ <p>${esc(t.note||TYPE_LABEL[t.type])}</p>
+ <div class="cart">${t.lines.map(l=>`<div class="cartrow"><span>₹${l.d} × ${l.qty} ${l.unit==='bundles'?'bundles × '+state.bundleSize:(l.d<10?'coins':'notes')}</span><b>${money(l.d*l.qty*(l.unit==='bundles'?state.bundleSize:1))}</b></div>`).join('')}</div>
+ <div class="summary"><div><span class="muted">Previous balance</span><b>${money(t.before)}</b></div><div><span class="muted">New balance</span><b>${money(t.after)}</b></div></div>
+ ${t.opened?.length?`<div class="notice">${I('alert-circle')}<span>${t.opened.map(x=>`${x.qty} bundle(s) of ₹${x.d} opened; remaining notes counted as loose.`).join(' ')}</span></div>`:''}
+ ${t.type!=='opening'?`<button class="btn ghost full" id="reverse">${I('undo-2',18)} Record reversal</button>`:''}
+ <p class="helper">Reference ${esc(t.id.slice(0,8))}</p>`);
+ const r=$('#reverse');if(r)r.onclick=()=>{$('#modal').close();openEntry(t.type==='in'?'out':'in',{cart:t.lines.map(l=>({...l})),qty:0,note:('Reversal: '+(t.note||TYPE_LABEL[t.type])).slice(0,160)})}
+}
+function exportCSV(){
+ const csv=[['ID','Date (UTC)','Person','Type','Note','Amount INR','Previous balance INR','New balance INR','Denominations','Bundles opened'],...state.transactions.map(t=>[t.id,t.time,t.actor,t.type,t.note,t.amount,t.before,t.after,t.lines.map(l=>`${l.d} x ${l.qty} ${l.unit}`).join('; '),(t.opened||[]).map(o=>`${o.d} x ${o.qty}`).join('; ')])].map(r=>r.map(v=>'"'+String(v??'').replace(/^[=+@\-]/,"' $&").replace(/"/g,'""')+'"').join(',')).join('\r\n');
+ const url=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'})),a=document.createElement('a');a.href=url;a.download=(demo()?'DEMO-':'')+'locker-'+new Date().toISOString().slice(0,10)+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)
+}
+
+/* ── Connection ── */
+function connectModal(){
+ modal('Connect Google Sheets',`<p class="helper">Paste the web app address from Google Apps Script (Deploy → Manage deployments). It ends in <b>/exec</b>. Do this once per phone, or set it in CONFIG before uploading.</p>
+ <div><label class="lbl" for="ep">Web app URL</label><input class="field" id="ep" type="url" placeholder="https://script.google.com/macros/s/…/exec" value="${esc(CONFIG.endpoint?'':endpoint)}"></div>
+ <div class="error hidden" id="epErr"></div><button class="btn primary full" id="epGo">Connect</button>
+ ${endpoint&&!CONFIG.endpoint?'<button class="textbtn" id="epClear">Disconnect and use sample data</button>':''}`);
+ $('#epGo').onclick=async()=>{const url=$('#ep').value.trim();if(!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(url)){$('#epErr').textContent='Paste the full /exec address from Apps Script.';$('#epErr').classList.remove('hidden');return}
+  const old=endpoint;endpoint=url;$('#epGo').disabled=true;$('#epGo').textContent='Checking…';
+  try{meta=await api('info');localStorage.setItem('lockerEndpoint',url);token='';localStorage.removeItem('lockerSession');$('#modal').close();toast('Connected to Google.');start()}
+  catch(e){endpoint=old;$('#epErr').textContent=e.message;$('#epErr').classList.remove('hidden');$('#epGo').disabled=false;$('#epGo').textContent='Connect'}};
+ const c=$('#epClear');if(c)c.onclick=()=>{endpoint='';localStorage.removeItem('lockerEndpoint');token='';localStorage.removeItem('lockerSession');$('#modal').close();start()};
+}
+
+/* ── Start / auth ── */
+async function start(){
+ if(demo()){state=sample();user={id:'owner',name:'Mujahid'};render();return}
+ $('#app').innerHTML='<div class="loading">Opening your locker…</div>';
+ try{meta=await api('info');
+  if(token){try{const r=await api('resume');state=r.state;user=r.user;lastSync=new Date();render();return}catch{token='';localStorage.removeItem('lockerSession')}}
+  auth()}
+ catch(e){$('#app').innerHTML=`<div class="auth">${logo()}<div class="card section-card group"><h1 class="disp">Couldn’t connect</h1><div class="error">${esc(e.message)}</div><button class="btn full" id="again">Try again</button>${native?'':'<button class="textbtn" id="chg">Change connection</button>'}</div></div>`;icons();$('#again').onclick=start;const c=$('#chg');if(c)c.onclick=connectModal}
+}
+function auth(){
+ const init=meta.initialized;
+ $('#app').innerHTML=`<div class="auth">${logo()}<div><h1 class="disp">${init?'Welcome back':'Set up your locker'}</h1><p class="muted small" style="margin-top:6px">${init?'Choose your account and enter your password.':'Create separate logins for you and your father. The cash sheet starts at zero.'}</p></div>
+ <form id="authForm" class="group" autocomplete="off">
+ ${init?`<div class="who">${['owner','father'].map(w=>`<button type="button" data-who="${w}" class="${authWho===w?'on':''}"><span class="av">${esc(meta.names[w].slice(0,2).toUpperCase())}</span><b>${esc(meta.names[w])}</b></button>`).join('')}</div>
+ <div><label class="lbl" for="pw">Password</label><input class="field" id="pw" type="password" required autocomplete="current-password"></div>`
+ :`<div><label class="lbl" for="setupKey">Setup key (from the Apps Script execution log)</label><input class="field" id="setupKey" type="password" required></div>
+ <div><label class="lbl" for="ownerName">Your name</label><input class="field" id="ownerName" value="Mujahid" maxlength="40" required></div>
+ <div><label class="lbl" for="pw">Your password (12+ characters)</label><input class="field" id="pw" type="password" minlength="12" required autocomplete="new-password"></div>
+ <div><label class="lbl" for="fatherName">Father’s name</label><input class="field" id="fatherName" value="Father" maxlength="40" required></div>
+ <div><label class="lbl" for="fpw">Father’s password (12+ characters)</label><input class="field" id="fpw" type="password" minlength="12" required autocomplete="new-password"></div>
+ <div><label class="lbl" for="bundleSize">Notes in one bundle</label><input class="field" id="bundleSize" type="number" min="1" max="1000" step="1" value="100" required><p class="helper" style="margin-top:6px">Fixed after the first entry. Count your actual bundles before choosing.</p></div>`}
+ <div class="error hidden" id="authErr"></div>
+ <button class="btn primary full" type="submit" id="authGo">${init?'Sign in':'Create locker'}</button>
+ ${init?'<button type="button" class="textbtn" id="recover" style="align-self:center">Forgot password?</button>':''}
+ </form>
+ ${native?'':'<button type="button" class="textbtn" id="chg" style="align-self:center;color:var(--g500)">Change connection</button>'}
+ <p class="helper" style="text-align:center">Your cash records stay in your private Google Sheet.</p></div>`;
+ icons();
+ $$('[data-who]').forEach(b=>b.onclick=()=>{authWho=b.dataset.who;$$('[data-who]').forEach(x=>x.classList.toggle('on',x===b))});
+ const chg=$('#chg');if(chg)chg.onclick=connectModal;const rec=$('#recover');if(rec)rec.onclick=recoveryModal;
+ $('#authForm').onsubmit=async e=>{e.preventDefault();const b=$('#authGo'),err=$('#authErr');b.disabled=true;b.textContent='Verifying…';err.classList.add('hidden');
+  try{
+   if(!init){const pw=$('#pw').value,fpw=$('#fpw').value;if(pw===fpw)throw Error('Use two different passwords.');const bundleSize=parseInt($('#bundleSize').value,10);
+    await api('initialize',{setupKey:$('#setupKey').value.trim(),ownerName:$('#ownerName').value,fatherName:$('#fatherName').value,bundleSize,ownerKey:await derive(pw,'owner'),fatherKey:await derive(fpw,'father')});
+    meta=await api('info');toast('Locker created. Sign in to continue.');auth();return}
+   const r=await api('login',{who:authWho,key:await derive($('#pw').value,authWho)});
+   token=r.token;localStorage.setItem('lockerSession',token);user=r.user;state=r.state;lastSync=new Date();view='overview';render();
+  }catch(ex){err.textContent=ex.message;err.classList.remove('hidden');b.disabled=false;b.textContent=init?'Sign in':'Create locker'}};
+}
+function passwordModal(){
+ modal('Change password',`<form id="pf" class="group"><div><label class="lbl" for="op">Current password</label><input class="field" id="op" type="password" required autocomplete="current-password"></div><div><label class="lbl" for="np">New password (12+ characters)</label><input class="field" id="np" type="password" minlength="12" required autocomplete="new-password"></div><div><label class="lbl" for="cp">Confirm new password</label><input class="field" id="cp" type="password" minlength="12" required autocomplete="new-password"></div><div class="error hidden" id="pfErr"></div><button class="btn primary full" id="pfGo">Update password</button></form>`);
+ $('#pf').onsubmit=async e=>{e.preventDefault();try{if($('#np').value!==$('#cp').value)throw Error('New passwords do not match.');$('#pfGo').disabled=true;await api('changePassword',{oldKey:await derive($('#op').value,user.id),newKey:await derive($('#np').value,user.id)});$('#modal').close();token='';state=null;localStorage.removeItem('lockerSession');auth();toast('Password changed. Please sign in again.')}catch(ex){$('#pfErr').textContent=ex.message;$('#pfErr').classList.remove('hidden');$('#pfGo').disabled=false}}
+}
+function recoveryModal(){
+ modal('Recover a password',`<p class="helper">The Google account owner first runs <b>createOwnerRecovery_</b> or <b>createFatherRecovery_</b> in Apps Script. The key shown there works once and expires in 15 minutes.</p><form id="rf" class="group"><div><label class="lbl" for="rw">Account</label><select class="field" id="rw"><option value="owner">${esc(meta.names.owner)}</option><option value="father">${esc(meta.names.father)}</option></select></div><div><label class="lbl" for="rk">Recovery key</label><input class="field" id="rk" type="password" required></div><div><label class="lbl" for="rp">New password (12+ characters)</label><input class="field" id="rp" type="password" minlength="12" required autocomplete="new-password"></div><div><label class="lbl" for="rc">Confirm new password</label><input class="field" id="rc" type="password" minlength="12" required></div><div class="error hidden" id="rfErr"></div><button class="btn primary full" id="rfGo">Reset password</button></form>`);
+ $('#rf').onsubmit=async e=>{e.preventDefault();try{if($('#rp').value!==$('#rc').value)throw Error('New passwords do not match.');$('#rfGo').disabled=true;const who=$('#rw').value;await api('recoverPassword',{who,recoveryKey:$('#rk').value,newKey:await derive($('#rp').value,who)});$('#modal').close();token='';localStorage.removeItem('lockerSession');auth();toast('Password reset. Sign in with the new password.')}catch(ex){$('#rfErr').textContent=ex.message;$('#rfErr').classList.remove('hidden');$('#rfGo').disabled=false}}
+}
+async function logout(){if(pending&&pending.who===user?.id){toast('Confirm the pending entry before signing out.');return}try{await api('logout')}catch{}token='';state=null;user=null;localStorage.removeItem('lockerSession');auth()}
+
+/* ── Install as app (PWA) ── */
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;scheduleInstall()});
+window.addEventListener('appinstalled',()=>{hideInstall();toast('Installed. Open Cabin Locker from your apps.');if(view==='settings'&&state)render()});
+function scheduleInstall(){if(standalone()||native)return;const snoozed=+localStorage.getItem('lockerInstallSnooze')||0;if(Date.now()<snoozed)return;setTimeout(showInstall,5000)}
+function showInstall(){
+ if(standalone()||(!deferredPrompt&&!isIOS))return;const el=$('#install');
+ el.innerHTML=`<img src="icons/icon-192.png" alt=""><div class="t"><b>Install Cabin Locker</b><p>${deferredPrompt?'Add it to your phone. Opens like an app.':'Tap Share, then “Add to Home Screen”.'}</p></div>${deferredPrompt?`<button class="btn primary" id="instGo">Install</button>`:''}<button class="x" id="instX" aria-label="Not now">${I('x',18)}</button>`;
+ el.classList.remove('hidden');icons();
+ const g=$('#instGo');if(g)g.onclick=doInstall;$('#instX').onclick=()=>{localStorage.setItem('lockerInstallSnooze',Date.now()+3*86400000);hideInstall()};
+}
+function hideInstall(){$('#install').classList.add('hidden')}
+async function doInstall(){if(!deferredPrompt){showInstall();return}const p=deferredPrompt;deferredPrompt=null;hideInstall();p.prompt();const {outcome}=await p.userChoice;if(outcome!=='accepted'){deferredPrompt=p}}
+if(isIOS)scheduleInstall();
+if('serviceWorker'in navigator&&!native&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+
+$('#modal').addEventListener('cancel',e=>{if(saving)e.preventDefault()});
+setInterval(()=>{if(!document.hidden&&!demo()&&token)refresh()},20000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!demo()&&token)refresh()});
+window.addEventListener('online',()=>{if(!demo()&&token)refresh()});
+start();
+</script>
+</body>
+</html>
