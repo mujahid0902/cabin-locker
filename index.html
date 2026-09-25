@@ -446,16 +446,18 @@ async function logout(){if(pending&&pending.who===user?.id){toast('Confirm the p
 let deferredPrompt=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;scheduleInstall()});
 window.addEventListener('appinstalled',()=>{hideInstall();toast('Installed. Open Cabin Locker from your apps.');if(view==='settings'&&state)render()});
-function scheduleInstall(){if(standalone()||native)return;const snoozed=+localStorage.getItem('lockerInstallSnooze')||0;if(Date.now()<snoozed)return;setTimeout(showInstall,5000)}
+let installTimer=null;
+function scheduleInstall(){if(standalone()||native)return;const snoozed=+localStorage.getItem('lockerInstallSnooze')||0;if(Date.now()<snoozed)return;if(!$('#install').classList.contains('hidden')){showInstall();return}clearTimeout(installTimer);installTimer=setTimeout(showInstall,5000)}
 function showInstall(){
- if(standalone()||(!deferredPrompt&&!isIOS))return;const el=$('#install');
- el.innerHTML=`<img src="icons/icon-192.png" alt=""><div class="t"><b>Install Cabin Locker</b><p>${deferredPrompt?'Add it to your phone. Opens like an app.':'Tap Share, then “Add to Home Screen”.'}</p></div>${deferredPrompt?`<button class="btn primary" id="instGo">Install</button>`:''}<button class="x" id="instX" aria-label="Not now">${I('x',18)}</button>`;
+ if(standalone()||native)return;const el=$('#install');
+ el.innerHTML=`<img src="icons/icon-192.png" alt=""><div class="t"><b>Install Cabin Locker</b><p>${deferredPrompt?'Add it to your phone. Opens like an app.':isIOS?'Tap Share, then “Add to Home Screen”.':'Tap Chrome menu ⋮, then “Install app” or “Add to Home screen”.'}</p></div>${deferredPrompt?`<button class="btn primary" id="instGo">Install</button>`:''}<button class="x" id="instX" aria-label="Not now">${I('x',18)}</button>`;
  el.classList.remove('hidden');icons();
  const g=$('#instGo');if(g)g.onclick=doInstall;$('#instX').onclick=()=>{localStorage.setItem('lockerInstallSnooze',Date.now()+3*86400000);hideInstall()};
 }
 function hideInstall(){$('#install').classList.add('hidden')}
-async function doInstall(){if(!deferredPrompt){showInstall();return}const p=deferredPrompt;deferredPrompt=null;hideInstall();p.prompt();const {outcome}=await p.userChoice;if(outcome!=='accepted'){deferredPrompt=p}}
-if(isIOS)scheduleInstall();
+async function doInstall(){if(!deferredPrompt){showInstall();return}const p=deferredPrompt;deferredPrompt=null;hideInstall();try{await p.prompt();await p.userChoice}catch{}if(view==='settings'&&state)render()}
+/* Show the install bar 5 s after opening. If Chrome's own install event arrives, the bar gets a one-tap Install button; otherwise it shows the menu steps. */
+scheduleInstall();
 if('serviceWorker'in navigator&&!native&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 
 $('#modal').addEventListener('cancel',e=>{if(saving)e.preventDefault()});
